@@ -36,10 +36,13 @@ BOTTOM_RAIL_TOP_MAX = 200.0  # Figure 2(a): top of the bottom rail above the dec
 # --- Timber: actual finished sizes, mm -------------------------------------
 # MBIE Guidance on Barrier Design (March 2012), 4.2.7: radiata H3.2, SG8 wet,
 # palings may be SG6. 90x90 posts, 90x45 handrail and rails, 125x25 palings.
+# This design departs from 4.2.7 by using 75x25 palings, which the guide
+# treats as other infill needing specific design. The fall is under 1 m, so
+# F4 doesn't require this barrier; see the README.
 POST = 90.0  # square post
 RAIL_W, RAIL_H = 45.0, 90.0  # top and bottom rails, on edge between the posts
 CAP_W, CAP_T = 140.0, 45.0  # cap rail (the handrail), laid flat over the posts and top rail
-PALING_W, PALING_T = 125.0, 25.0  # vertical palings nailed to one face of the rails
+PALING_W, PALING_T = 75.0, 25.0  # vertical palings fixed to one face of the rails
 PALING_FACE = "inside"  # "inside": deck side, so the rails are not footholds; or "outside"
 
 # --- Layout ---------------------------------------------------------------
