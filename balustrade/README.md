@@ -24,7 +24,9 @@ The design is based on MBIE's timber barrier for houses: paragraph 4.2.7 of
 
 Two posts straddle the corner, one on each joist face. Each is set back from
 the corner, so a gap is left between them, and the cap rails run on over the
-gap and meet on a 45° mitre at the corner.
+gap and meet on a 45° mitre at the corner. Under the mitre, a 90x90x90 post
+offcut sits between the two corner posts at top-rail height. It's fixed to
+both posts and screwed up into both caps, so it supports the joint.
 
 **The corner gap is a diagonal.** With each post set back by `CORNER_OFFSET`,
 the opening between their nearest edges is `CORNER_OFFSET * sqrt(2)`. By
@@ -40,13 +42,13 @@ From the repo root:
 & "C:\Program Files\FreeCAD 1.1\bin\FreeCADCmd.exe" balustrade/build.py
 ```
 
-This builds two versions of the design, which differ only at the corner
-(`VARIANTS` in `build.py`):
+This builds two versions of the design, which differ only in how the caps
+meet at the corner (`VARIANTS` in `build.py`). Both have the corner block.
 
-| Version | Corner joint | Files in `out/` (git ignores them) |
+| Version | Cap joint | Files in `out/` (git ignores them) |
 |---|---|---|
-| The design | Caps meet on a 45° mitre | `balustrade.FCStd`, `balustrade.step`, `balustrade_cut_list.csv` |
-| For comparison | The long cap runs through and the short cap butts onto its side. A 90x90x90 post offcut sits between the two corner posts under the joint, fixed to both posts and up into both caps. | `balustrade_block.FCStd`, `balustrade_block.step`, `balustrade_block_cut_list.csv` |
+| The design | 45° mitre | `balustrade.FCStd`, `balustrade.step`, `balustrade_cut_list.csv` |
+| For comparison | The long cap runs through and the short cap butts onto its side | `balustrade_butt.FCStd`, `balustrade_butt.step`, `balustrade_butt_cut_list.csv` |
 
 Open the `.FCStd` files in FreeCAD to look around the models. The build also
 prints the bays, and for each version its cut list and design checks. It exits
@@ -118,6 +120,7 @@ and not a design check:
 | Rails | 90x45 on edge, behind the palings. The bottom rail is 50 mm above the deck, with its top at 140 mm; the top rail sits under the cap. |
 | Palings | 75x25, 905 mm long (from the underside of the bottom rail to the cap), 32 in total. About 60% of each bay is open. |
 | Cap | 140x45, 5315 mm and 1915 mm (to the long point), each with a 45° mitre at the corner end |
+| Corner block | 90x90x90 post offcut under the mitre, touching both corner posts and both caps (checked) |
 
 ## Not decided or not checked yet
 
@@ -131,10 +134,10 @@ and not a design check:
 - **The steps.** The 1.2 m opening at the top of the steps is outside this
   model. For toddlers, consider a gate there. The Building Code (clause D1)
   requires handrails on stairs.
-- **The mitred corner is unsupported.** Each cap runs about 179 mm past the
-  face of its corner post to the mitre. The only thing holding the joint is the
-  joint itself (glue, screws or a biscuit). The block version supports the
-  joint from below. A block also works under a mitre if the joint needs it.
+- **Fixing the corner block.** Each cap runs about 179 mm past the face of
+  its corner post to the mitre, and the block is what carries that. Screw the
+  block to both corner posts and up into both caps, either side of the mitre.
+  Keep the screws clear of the mitre faces so they don't split the points.
 - **Little room for timber movement.** The widest gap is 90.2 mm against the
   100 mm limit, about 10 mm of margin. A paling that shrinks, cups or is fixed
   slightly off its mark eats into that. Set out the palings with a spacer

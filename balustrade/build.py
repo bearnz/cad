@@ -57,11 +57,13 @@ GAP_MARGIN = 5.0  # design paling gaps this much under MAX_OPENING; 5 for a more
 CORNER_OFFSET = None
 
 # --- Corner joint of the cap rails ----------------------------------------
-# "mitre": both caps run to the outside corner and meet on a 45 degree mitre.
-# "block": the long cap runs through the corner, the short cap butts onto its
-#          side, and a POST-sized block, RAIL_H tall, sits between the two corner
-#          posts under the joint, fixed to both posts and up into both caps.
-VARIANTS = {"balustrade": "mitre", "balustrade_block": "block"}
+# Each variant is (cap joint, corner block).
+# Cap joint "mitre": both caps run to the outside corner and meet on a 45
+#   degree mitre. "butt": the long cap runs through the corner and the short
+#   cap butts onto its side.
+# Corner block: a POST-sized block, RAIL_H tall, between the two corner posts
+#   under the cap joint, fixed to both posts and up into both caps.
+VARIANTS = {"balustrade": ("mitre", True), "balustrade_butt": ("butt", True)}
 
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out")
 
@@ -234,12 +236,12 @@ def cut_list(parts, joint):
     return sorted((m, s, l, q, n) for (m, s, l, n), q in counts.items())
 
 
-def build_variant(name, joint, offset):
-    """Build, save and export one variant. Returns (parts, bays)."""
+def build_variant(name, joint, block, offset):
+    """Build, save and export one variant. Returns (parts, bays, cut list rows)."""
     long_parts, long_bays = build_run(LONG_RUN, along_x=True, offset=offset, joint=joint)
     short_parts, short_bays = build_run(SHORT_RUN, along_x=False, offset=offset, joint=joint)
     parts = long_parts + short_parts
-    if joint == "block":
+    if block:
         parts.append(corner_block(offset))
 
     doc = App.newDocument(name)
@@ -263,14 +265,14 @@ def main():
     offset = corner_offset()
     print(f"Corner posts: {offset:.1f} mm back from the deck corner")
     all_ok, bays_printed = True, False
-    for name, joint in VARIANTS.items():
-        parts, bays, rows = build_variant(name, joint, offset)
+    for name, (joint, block) in VARIANTS.items():
+        parts, bays, rows = build_variant(name, joint, block, offset)
         if not bays_printed:
             print("Bays:")
             for b in bays:
                 print(f"  {b['run']:5} bay {b['bay']}: clear {b['clear']:.0f} mm, {b['palings']} palings, gaps {b['gap']:.1f} mm")
             bays_printed = True
-        print(f"\n== {name} ({joint} corner): {len(parts)} parts ==")
+        print(f"\n== {name} ({joint} cap joint{', corner block' if block else ''}): {len(parts)} parts ==")
         print("Cut list:")
         for m, s, l, q, n in rows:
             print(f"  {q:3} x {m:10} {s:>7}  {l} mm" + (f"  ({n})" if n else ""))
