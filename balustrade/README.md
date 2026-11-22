@@ -92,12 +92,12 @@ design meets the figures above.
 |---|---|
 | Barrier height | 1000 mm, top of cap above the deck surface |
 | Posts | 10 posts, 90x90, 1175 mm long (220 mm below the deck surface for the bolts) |
-| Gap margin | Gaps designed at least 15 mm under the 100 mm limit (`GAP_MARGIN`), for timber movement |
-| Corner | Each corner post 36.2 mm back from the deck corner; 51.1 mm diagonal opening between them |
-| Long run | 7 posts, 6 bays at 846 mm centres, 4 palings per bay, 51.1 mm gaps |
-| Short run | 3 posts, 2 bays at 837 mm centres, 4 palings per bay, 49.4 mm gaps |
+| Gap margin | Gaps designed at least 5 mm under the 100 mm limit (`GAP_MARGIN`), for a more open look |
+| Corner | Each corner post 66.4 mm back from the deck corner; 93.9 mm diagonal opening between them |
+| Long run | 7 posts, 6 bays at 841 mm centres, 3 palings per bay, 93.9 mm gaps |
+| Short run | 3 posts, 2 bays at 822 mm centres, 3 palings per bay, 89.2 mm gaps |
 | Rails | 90x45 on edge, behind the palings. The bottom rail is 50 mm above the deck, with its top at 140 mm; the top rail sits under the cap. |
-| Palings | 125x25, 905 mm long (from the underside of the bottom rail to the cap), 32 in total |
+| Palings | 125x25, 905 mm long (from the underside of the bottom rail to the cap), 24 in total |
 | Cap | 140x45, 5315 mm and 1915 mm (to the long point), each with a 45° mitre at the corner end |
 
 ## Not decided or not checked yet
@@ -105,12 +105,14 @@ design meets the figures above.
 - **The deck framing.** MBIE's no-engineer path needs a deck built to NZS 3604
   clause 7.4, with a **double** end or boundary joist behind every post. Check
   both edges of the deck before building.
-- **The mitred corner is unsupported.** Each cap runs about 151 mm past the
+- **The mitred corner is unsupported.** Each cap runs about 181 mm past the
   face of its corner post to the mitre. The only thing holding the joint is the
   joint itself (glue, screws or a biscuit). The block version supports the
   joint from below. A block also works under a mitre if the joint needs it.
-- **Paling count.** At 4 palings per bay the gaps are about 50 mm. Three per
-  bay gives about 95 mm, under the 100 mm limit but with only 5 mm of margin,
-  so it fails the 15 mm `GAP_MARGIN`.
+- **Little room for timber movement.** At 3 palings per bay the widest gap is
+  93.9 mm against the 100 mm limit, about 6 mm of margin. A paling that
+  shrinks, cups or is fixed slightly off its mark could take a gap past 100 mm.
+  Set out the palings with a spacer block, and check the gaps after the timber
+  has dried. `GAP_MARGIN = 15` goes back to 4 per bay with about 50 mm gaps.
 - **Editions.** The guide is from 2012 and cites NZS 3602:2003 and
   NZS 3604:2011. Whether newer editions change any of this isn't checked.

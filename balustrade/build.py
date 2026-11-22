@@ -47,7 +47,7 @@ PALING_FACE = "inside"  # "inside": deck side, so the rails are not footholds; o
 MAX_POST_SPACING = 1000.0
 POST_BELOW_DECK = 220.0  # post length below the deck surface, for the joist bolts
 BOTTOM_GAP = 50.0  # deck surface to underside of the bottom rail
-GAP_MARGIN = 15.0  # design paling gaps this much under MAX_OPENING, for timber movement
+GAP_MARGIN = 5.0  # design paling gaps this much under MAX_OPENING; 5 for a more open look
 # Each corner post's distance back from the deck corner along its own joist.
 # The opening between the two corner posts is the diagonal, CORNER_OFFSET * sqrt(2).
 # None: choose it so that opening equals the widest paling gap.
