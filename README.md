@@ -25,3 +25,12 @@ Output (`.FCStd`, STEP and a cut list) goes to `out/`, which git ignores.
 There is no separate test suite. Each `build.py` prints its design checks and
 exits 1 if any fails. A check that waits on a measurement prints TODO and
 doesn't fail the build.
+
+## Copyright
+
+Copyright (c) 2026 Josh (github.com/bearnz). All rights reserved.
+
+No licence is granted. You are welcome to read this code and to fork it on
+GitHub; you may not use, copy, modify or redistribute it without permission.
+See [NOTICE](NOTICE) for the terms, and open an issue if you would like to use
+any of it.
