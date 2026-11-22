@@ -7,3 +7,9 @@
 # OS clutter
 .DS_Store
 Thumbs.db
+
+# FreeCAD backups and generated output
+*.FCBak
+*.FCStd[0-9]*
+out/
+__pycache__/

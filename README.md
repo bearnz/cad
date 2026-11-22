@@ -1,6 +1,6 @@
-# PROJECT_NAME
+# cad
 
-PROJECT_DESCRIPTION
+FreeCAD designs for home projects, built from parametric Python scripts.
 
 ## Running
 
