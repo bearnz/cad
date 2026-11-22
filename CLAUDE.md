@@ -14,7 +14,10 @@ build after every change.
 
 ## Notes
 
-- One folder per design. Each design is a Python script that builds the model
+- One folder per design. `deck_with_balustrade/build.py` imports the other
+  two designs' `build.py` files (each guards its `main()` on the module name,
+  because FreeCADCmd runs a script as `build`, not `__main__`).
+- Each design is a Python script that builds the model
   from named dimensions, so changing a dimension and rerunning rebuilds it.
 - Scripts run under FreeCAD's own Python, not uv:
   `"C:\Program Files\FreeCAD 1.1\bin\FreeCADCmd.exe" <script>.py`

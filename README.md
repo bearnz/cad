@@ -5,6 +5,9 @@ FreeCAD designs for home projects, built from parametric Python scripts.
 ## Designs
 
 - [balustrade](balustrade/): a timber balustrade for two edges of the deck
+- [deck](deck/): the existing deck's framing and boards
+- [deck_with_balustrade](deck_with_balustrade/): the two together, with the
+  bolts that fix the posts to the deck
 
 ## Running
 
@@ -20,4 +23,5 @@ Output (`.FCStd`, STEP and a cut list) goes to `out/`, which git ignores.
 ## Testing
 
 There is no separate test suite. Each `build.py` prints its design checks and
-exits 1 if any fails.
+exits 1 if any fails. A check that waits on a measurement prints TODO and
+doesn't fail the build.

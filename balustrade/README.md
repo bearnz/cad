@@ -73,7 +73,8 @@ page (confirmed current in February 2016):
 | Rule | In the design |
 |---|---|
 | A house timber barrier following 4.2.7 meets the Building Code with no further engineering design, if the deck follows NZS 3604:2011 clause 7.4 and the 90x90 posts are at **1000 mm centres at most** | `MAX_POST_SPACING = 1000`, checked |
-| Posts 90x90, fixed to a **double** end joist or double boundary joist with **2 × M12 bolts** (50x50x3 washers, heads and nuts not countersunk), as in NZS 3604 Figure 7.10(c) | Posts modelled; bolts and joists not modelled |
+| Posts 90x90, fixed to a **double** end joist or double boundary joist with **2 × M12 bolts** (50x50x3 washers, heads and nuts not countersunk), positioned as in NZS 3604 Figure 7.10(c) | Bolts and joists modelled in [deck_with_balustrade](../deck_with_balustrade/) |
+| Figure 4.8: the bolts 25 mm from the top and bottom of the joist, the post's bottom flush with the joist's, and the top of the bottom rail at most **150 mm** above the deck | `POST_BELOW_DECK = 209`; `MBIE_BOTTOM_RAIL_TOP_MAX`, checked |
 | NZS 3604 Figure 7.10(c) corrections: the 250 mm M12 coach screws aren't available, so use 200 mm and 240 mm M12 coach screws at 140 mm centres, as MBIE's page sets out | Not modelled |
 | Handrail 90x45, with 4 × 100x3.75 nails into the top of each post | 140x45 cap |
 | Top and bottom rails 90x45 between the posts, with 4 skewed 100x3.75 nails at each end, or fixed to a face of the posts | Between the posts |
@@ -112,7 +113,7 @@ and not a design check:
 | Item | Value |
 |---|---|
 | Barrier height | 1000 mm, top of cap above the deck surface |
-| Posts | 10 posts, 90x90, 1175 mm long (220 mm below the deck surface for the bolts) |
+| Posts | 10 posts, 90x90, 1164 mm long: 209 mm below the deck surface, so the bottom is flush with the bottom of the 190 mm joists (MBIE Figure 4.8) |
 | Gap margin | Gaps designed at least 5 mm under the 100 mm limit (`GAP_MARGIN`), for a more open look |
 | Corner | Each corner post 63.8 mm back from the deck corner; 90.2 mm diagonal opening between them |
 | Long run | 7 posts, 6 bays at 841 mm centres, 4 palings per bay, 90.2 mm gaps |
@@ -125,8 +126,9 @@ and not a design check:
 ## Not decided or not checked yet
 
 - **The deck framing.** 4.2.7's posts bolt to a **double** end or boundary
-  joist on a deck built to NZS 3604 clause 7.4. Check both edges of the deck
-  before building. The posts take the load from anyone leaning on the cap.
+  joist on a deck built to NZS 3604 clause 7.4. Both balustraded edges are
+  doubled. Where each post's bolts can go depends on the joist positions:
+  see [deck_with_balustrade](../deck_with_balustrade/).
 - **Paling fixings.** 4.2.7's 3 × 60x3.15 nails per rail are sized for a 125 mm
   board. A 75 mm board has less room before it splits, so pre-drill, or use
   stainless screws. Fixings are more likely to fail than the timber. Check the
