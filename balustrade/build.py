@@ -3,15 +3,16 @@
 Run with FreeCAD's own Python (from the repo root):
     "C:\\Program Files\\FreeCAD 1.1\\bin\\FreeCADCmd.exe" balustrade/build.py
 
-Writes out/balustrade.FCStd, out/balustrade.step and out/balustrade_cut_list.csv,
-prints the design checks and the cut list, and exits 1 if a check fails.
+Builds one model per entry in VARIANTS, each written to out/<name>.FCStd,
+out/<name>.step and out/<name>_cut_list.csv. Prints the bays, and each variant's
+cut list and design checks, and exits 1 if any check fails.
 
 Coordinates, in mm: the outside corner of the deck where the two balustraded
 edges meet is the origin. The long edge runs along +X, the short edge along +Y,
 the deck lies in +X/+Y, and the deck surface is z = 0. Posts are bolted to the
 outside face of the edge joists, so they sit just outside the deck (x < 0 or y < 0).
-Each run has its own corner post, so two posts straddle the corner, one on each
-joist face, meeting along the corner's vertical edge.
+Each run has its own corner post, set back from the corner along its own joist,
+so the two corner posts have a gap between them and the cap rails meet over it.
 """
 
 import csv
@@ -48,6 +49,13 @@ GAP_MARGIN = 15.0  # design baluster gaps this much under MAX_OPENING, for timbe
 # None: choose it so that opening equals the widest baluster gap.
 CORNER_OFFSET = None
 
+# --- Corner joint of the cap rails ----------------------------------------
+# "mitre": both caps run to the outside corner and meet on a 45 degree mitre.
+# "block": the long cap runs through the corner, the short cap butts onto its
+#          side, and a POST-sized block, RAIL_H tall, sits between the two corner
+#          posts under the joint, fixed to both posts and up into both caps.
+VARIANTS = {"balustrade": "mitre", "balustrade_block": "block"}
+
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out")
 
 # Derived heights
@@ -58,6 +66,9 @@ BOTTOM_RAIL_TOP = BOTTOM_GAP + RAIL_H
 BALUSTER_LEN = TOP_RAIL_BOTTOM - BOTTOM_RAIL_TOP
 POST_LEN = CAP_BOTTOM + POST_BELOW_DECK
 
+MID = -POST / 2  # rail, baluster and cap centreline, across each run
+CAP_OUT, CAP_IN = MID - CAP_W / 2, MID + CAP_W / 2  # cap edges, across each run
+
 
 def box(x0, x1, y0, y1, z0, z1):
     """Axis-aligned box from two corners, any order."""
@@ -65,6 +76,12 @@ def box(x0, x1, y0, y1, z0, z1):
     y0, y1 = sorted((y0, y1))
     z0, z1 = sorted((z0, z1))
     return Part.makeBox(x1 - x0, y1 - y0, z1 - z0, App.Vector(x0, y0, z0))
+
+
+def prism(points, z0, z1):
+    """Vertical prism from a closed XY outline."""
+    wire = Part.makePolygon([App.Vector(x, y, z0) for x, y in points + points[:1]])
+    return Part.Face(wire).extrude(App.Vector(0, 0, z1 - z0))
 
 
 def post_positions(run, offset):
@@ -109,16 +126,17 @@ def corner_offset():
     return lo
 
 
-def build_run(run, along_x, offset):
+def build_run(run, along_x, offset, joint):
     """Return (parts, bays) for one run. parts is a list of (label, shape)."""
-    # Map (along, across, z) in run space to model space. "across" runs from
-    # the joist face (0) outwards (negative), so posts sit at across in [-POST, 0].
-    def place(a0, a1, c0, c1, z0, z1):
-        if along_x:
-            return box(a0, a1, c0, c1, z0, z1)
-        return box(c0, c1, a0, a1, z0, z1)
+    # Map run space (along, across) to model space. "across" runs from the
+    # joist face (0) outwards (negative), so posts sit at across in [-POST, 0].
+    def xy(a, c):
+        return (a, c) if along_x else (c, a)
 
-    mid = -POST / 2  # rail and baluster centreline, across the run
+    def place(a0, a1, c0, c1, z0, z1):
+        (x0, y0), (x1, y1) = xy(a0, c0), xy(a1, c1)
+        return box(x0, x1, y0, y1, z0, z1)
+
     posts = post_positions(run, offset)
     parts, bays = [], []
     tag = "Long" if along_x else "Short"
@@ -129,86 +147,120 @@ def build_run(run, along_x, offset):
     for b in range(len(posts) - 1):
         a0, a1 = posts[b] + POST, posts[b + 1]
         clear = a1 - a0
-        parts.append((f"{tag}_TopRail{b}", place(a0, a1, mid - RAIL_W / 2, mid + RAIL_W / 2, TOP_RAIL_BOTTOM, CAP_BOTTOM)))
-        parts.append((f"{tag}_BottomRail{b}", place(a0, a1, mid - RAIL_W / 2, mid + RAIL_W / 2, BOTTOM_GAP, BOTTOM_RAIL_TOP)))
+        parts.append((f"{tag}_TopRail{b}", place(a0, a1, MID - RAIL_W / 2, MID + RAIL_W / 2, TOP_RAIL_BOTTOM, CAP_BOTTOM)))
+        parts.append((f"{tag}_BottomRail{b}", place(a0, a1, MID - RAIL_W / 2, MID + RAIL_W / 2, BOTTOM_GAP, BOTTOM_RAIL_TOP)))
         n, gap = baluster_layout(clear)
         for k in range(n):
             s = a0 + gap + k * (BALUSTER + gap)
-            parts.append((f"{tag}_Bay{b}_Baluster{k}", place(s, s + BALUSTER, mid - BALUSTER / 2, mid + BALUSTER / 2, BOTTOM_RAIL_TOP, TOP_RAIL_BOTTOM)))
+            parts.append((f"{tag}_Bay{b}_Baluster{k}", place(s, s + BALUSTER, MID - BALUSTER / 2, MID + BALUSTER / 2, BOTTOM_RAIL_TOP, TOP_RAIL_BOTTOM)))
         bays.append({"run": tag, "bay": b, "clear": clear, "balusters": n, "gap": gap})
 
-    # Cap rail centred on the post line. The long cap runs through the corner,
-    # over the gap between the corner posts; the short cap butts against its side.
-    c0 = mid - CAP_W / 2
-    start = mid - CAP_W / 2 if along_x else mid + CAP_W / 2
-    parts.append((f"{tag}_Cap", place(start, run, c0, c0 + CAP_W, CAP_BOTTOM, CAP_TOP)))
+    # Cap rail centred on the post line, run out over the gap to the corner.
+    if joint == "mitre":
+        # Both caps reach the outside corner; the mitre runs from the outside
+        # corner of the caps (CAP_OUT, CAP_OUT) to the inside one (CAP_IN, CAP_IN).
+        outline = [xy(CAP_OUT, CAP_OUT), xy(run, CAP_OUT), xy(run, CAP_IN), xy(CAP_IN, CAP_IN)]
+        cap = prism(outline, CAP_BOTTOM, CAP_TOP)
+    else:
+        # The long cap runs through the corner; the short cap butts onto its side.
+        start = CAP_OUT if along_x else CAP_IN
+        cap = place(start, run, CAP_OUT, CAP_IN, CAP_BOTTOM, CAP_TOP)
+    parts.append((f"{tag}_Cap", cap))
     return parts, bays
 
 
-def checks(bays, corner_gap):
+def corner_block(offset):
+    """POST-sized block between the two corner posts, under the cap joint. It
+    touches the long corner post's end face (x = offset) and the short corner
+    post's end face (y = offset)."""
+    return ("Corner_Block", box(offset - POST, offset, offset - POST, offset, TOP_RAIL_BOTTOM, CAP_BOTTOM))
+
+
+def checks(bays, shapes):
     """Return a list of (name, ok, detail)."""
     worst_gap = max(b["gap"] for b in bays)
     spacings = [b["clear"] + POST for b in bays]
-    return [
+    corner_gap = shapes["Long_Post0"].distToShape(shapes["Short_Post0"])[0]
+    results = [
         ("Barrier height", CAP_TOP >= BARRIER_HEIGHT_MIN, f"top {CAP_TOP:.0f} mm, need >= {BARRIER_HEIGHT_MIN:.0f}"),
         ("Baluster gaps", worst_gap < MAX_OPENING, f"widest {worst_gap:.1f} mm, need < {MAX_OPENING:.0f}"),
         ("Bottom gap", BOTTOM_GAP < MAX_OPENING, f"{BOTTOM_GAP:.0f} mm, need < {MAX_OPENING:.0f}"),
         ("Bottom rail height", BOTTOM_RAIL_TOP <= BOTTOM_RAIL_TOP_MAX, f"top at {BOTTOM_RAIL_TOP:.0f} mm, max {BOTTOM_RAIL_TOP_MAX:.0f}"),
         ("Corner opening", corner_gap < MAX_OPENING, f"{corner_gap:.1f} mm between the corner posts, need < {MAX_OPENING:.0f}"),
         ("Post spacing", max(spacings) <= MAX_POST_SPACING, f"widest {max(spacings):.0f} mm centres, max {MAX_POST_SPACING:.0f}"),
+        ("Caps meet at the corner", shapes["Long_Cap"].distToShape(shapes["Short_Cap"])[0] < 0.01, "long and short caps in contact"),
     ]
+    if "Corner_Block" in shapes:
+        block = shapes["Corner_Block"]
+        touching = [n for n in ("Long_Post0", "Short_Post0", "Long_Cap", "Short_Cap") if block.distToShape(shapes[n])[0] < 0.01]
+        results.append(("Corner block bears on posts and caps", len(touching) == 4, f"touches {', '.join(touching) or 'nothing'}"))
+    return results
 
 
-def cut_list(parts):
-    """Group parts by member type and length. Returns rows of (member, section, length, qty)."""
+def cut_list(parts, joint):
+    """Group parts by member type and length. Returns rows of (member, section, length, qty, note).
+    A part's length is its longest bounding-box side, which for a mitred cap is
+    the long point."""
     sections = {"Post": f"{POST:.0f}x{POST:.0f}", "TopRail": f"{RAIL_H:.0f}x{RAIL_W:.0f}",
                 "BottomRail": f"{RAIL_H:.0f}x{RAIL_W:.0f}", "Baluster": f"{BALUSTER:.0f}x{BALUSTER:.0f}",
-                "Cap": f"{CAP_W:.0f}x{CAP_T:.0f}"}
+                "Cap": f"{CAP_W:.0f}x{CAP_T:.0f}", "Block": f"{POST:.0f}x{POST:.0f}"}
+    notes = {"Cap": "45 deg mitre at the corner end, length to the long point" if joint == "mitre" else "square ends",
+             "Block": "post offcut"}
     counts = {}
     for label, shape in parts:
         member = next(m for m in sections if m in label.split("_")[-1])
         bb = shape.BoundBox
         length = round(max(bb.XLength, bb.YLength, bb.ZLength))
-        key = (member, sections[member], length)
+        key = (member, sections[member], length, notes.get(member, ""))
         counts[key] = counts.get(key, 0) + 1
-    return sorted((m, s, l, q) for (m, s, l), q in counts.items())
+    return sorted((m, s, l, q, n) for (m, s, l, n), q in counts.items())
 
 
-def main():
-    offset = corner_offset()
-    long_parts, long_bays = build_run(LONG_RUN, along_x=True, offset=offset)
-    short_parts, short_bays = build_run(SHORT_RUN, along_x=False, offset=offset)
+def build_variant(name, joint, offset):
+    """Build, save and export one variant. Returns (parts, bays)."""
+    long_parts, long_bays = build_run(LONG_RUN, along_x=True, offset=offset, joint=joint)
+    short_parts, short_bays = build_run(SHORT_RUN, along_x=False, offset=offset, joint=joint)
     parts = long_parts + short_parts
-    bays = long_bays + short_bays
+    if joint == "block":
+        parts.append(corner_block(offset))
 
-    os.makedirs(OUT_DIR, exist_ok=True)
-    doc = App.newDocument("Balustrade")
+    doc = App.newDocument(name)
     for label, shape in parts:
         doc.addObject("Part::Feature", label).Shape = shape
     doc.recompute()
-    doc.saveAs(os.path.join(OUT_DIR, "balustrade.FCStd"))
-    Part.export(doc.Objects, os.path.join(OUT_DIR, "balustrade.step"))
+    doc.saveAs(os.path.join(OUT_DIR, f"{name}.FCStd"))
+    Part.export(doc.Objects, os.path.join(OUT_DIR, f"{name}.step"))
+    App.closeDocument(doc.Name)
 
-    rows = cut_list(parts)
-    with open(os.path.join(OUT_DIR, "balustrade_cut_list.csv"), "w", newline="") as f:
+    rows = cut_list(parts, joint)
+    with open(os.path.join(OUT_DIR, f"{name}_cut_list.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["member", "section_mm", "length_mm", "qty"])
+        w.writerow(["member", "section_mm", "length_mm", "qty", "note"])
         w.writerows(rows)
+    return parts, long_bays + short_bays, rows
 
-    print(f"Corner posts: {offset:.1f} mm back from the deck corner, cap overhangs the long one by {offset + POST / 2 + CAP_W / 2:.0f} mm")
-    print("Bays:")
-    for b in bays:
-        print(f"  {b['run']:5} bay {b['bay']}: clear {b['clear']:.0f} mm, {b['balusters']} balusters, gaps {b['gap']:.1f} mm")
-    print("Cut list:")
-    for m, s, l, q in rows:
-        print(f"  {q:3} x {m:10} {s:>7}  {l} mm")
-    print("Checks:")
-    shapes = dict(parts)
-    corner_gap = shapes["Long_Post0"].distToShape(shapes["Short_Post0"])[0]
-    results = checks(bays, corner_gap)
-    for name, ok, detail in results:
-        print(f"  {'PASS' if ok else 'FAIL'}  {name}: {detail}")
-    if not all(ok for _, ok, _ in results):
+
+def main():
+    os.makedirs(OUT_DIR, exist_ok=True)
+    offset = corner_offset()
+    print(f"Corner posts: {offset:.1f} mm back from the deck corner")
+    all_ok, bays_printed = True, False
+    for name, joint in VARIANTS.items():
+        parts, bays, rows = build_variant(name, joint, offset)
+        if not bays_printed:
+            print("Bays:")
+            for b in bays:
+                print(f"  {b['run']:5} bay {b['bay']}: clear {b['clear']:.0f} mm, {b['balusters']} balusters, gaps {b['gap']:.1f} mm")
+            bays_printed = True
+        print(f"\n== {name} ({joint} corner): {len(parts)} parts ==")
+        print("Cut list:")
+        for m, s, l, q, n in rows:
+            print(f"  {q:3} x {m:10} {s:>7}  {l} mm" + (f"  ({n})" if n else ""))
+        print("Checks:")
+        for check, ok, detail in checks(bays, dict(parts)):
+            print(f"  {'PASS' if ok else 'FAIL'}  {check}: {detail}")
+            all_ok = all_ok and ok
+    if not all_ok:
         sys.stdout.flush()  # FreeCADCmd drops unflushed output on sys.exit
         sys.exit(1)
 
