@@ -32,6 +32,9 @@ DECK_HEIGHT = 960.0  # deck surface above ground at the highest point
 BARRIER_HEIGHT_MIN = 1000.0  # Table 1, housing decks: top of barrier above the deck surface
 MAX_OPENING = 100.0  # 1.2.1 b): a sphere this size must not pass through any opening
 BOTTOM_RAIL_TOP_MAX = 200.0  # Figure 2(a): top of the bottom rail above the deck surface
+# MBIE Guidance on Barrier Design (March 2012), Figure 4.8: the timber barrier
+# has the top of its bottom rail at most 150 mm above the deck surface.
+MBIE_BOTTOM_RAIL_TOP_MAX = 150.0
 
 # --- Timber: actual finished sizes, mm -------------------------------------
 # MBIE Guidance on Barrier Design (March 2012), 4.2.7: radiata H3.2, SG8 wet,
@@ -48,7 +51,10 @@ PALING_FACE = "inside"  # "inside": deck side, so the rails are not footholds; o
 # --- Layout ---------------------------------------------------------------
 # MBIE "Barrier guide and updates": 90x90 posts at 1000 mm centres maximum.
 MAX_POST_SPACING = 1000.0
-POST_BELOW_DECK = 220.0  # post length below the deck surface, for the joist bolts
+# Post length below the deck surface. MBIE Figure 4.8 has the post's bottom
+# flush with the bottom of the joist it bolts to: here 19 mm decking on 190 mm
+# joists (deck/build.py).
+POST_BELOW_DECK = 209.0
 BOTTOM_GAP = 50.0  # deck surface to underside of the bottom rail
 GAP_MARGIN = 5.0  # design paling gaps this much under MAX_OPENING; 5 for a more open look
 # Each corner post's distance back from the deck corner along its own joist.
@@ -205,7 +211,8 @@ def checks(bays, shapes):
         ("Barrier height", CAP_TOP >= BARRIER_HEIGHT_MIN, f"top {CAP_TOP:.0f} mm, need >= {BARRIER_HEIGHT_MIN:.0f}"),
         ("Paling gaps", worst_gap < MAX_OPENING, f"widest {worst_gap:.1f} mm, need < {MAX_OPENING:.0f}"),
         ("Bottom gap", BOTTOM_GAP < MAX_OPENING, f"{BOTTOM_GAP:.0f} mm, need < {MAX_OPENING:.0f}"),
-        ("Bottom rail height", BOTTOM_RAIL_TOP <= BOTTOM_RAIL_TOP_MAX, f"top at {BOTTOM_RAIL_TOP:.0f} mm, max {BOTTOM_RAIL_TOP_MAX:.0f}"),
+        ("Bottom rail height", BOTTOM_RAIL_TOP <= min(BOTTOM_RAIL_TOP_MAX, MBIE_BOTTOM_RAIL_TOP_MAX),
+         f"top at {BOTTOM_RAIL_TOP:.0f} mm, max {MBIE_BOTTOM_RAIL_TOP_MAX:.0f} (MBIE) and {BOTTOM_RAIL_TOP_MAX:.0f} (F4/AS1)"),
         ("Corner opening", corner_gap < MAX_OPENING, f"{corner_gap:.1f} mm between the corner posts, need < {MAX_OPENING:.0f}"),
         ("Post spacing", max(spacings) <= MAX_POST_SPACING, f"widest {max(spacings):.0f} mm centres, max {MAX_POST_SPACING:.0f}"),
         ("Caps meet at the corner", shapes["Long_Cap"].distToShape(shapes["Short_Cap"])[0] < 0.01, "long and short caps in contact"),
@@ -236,13 +243,21 @@ def cut_list(parts, joint):
     return sorted((m, s, l, q, n) for (m, s, l, n), q in counts.items())
 
 
-def build_variant(name, joint, block, offset):
-    """Build, save and export one variant. Returns (parts, bays, cut list rows)."""
+def design_parts(joint, block, offset=None):
+    """All parts of one variant, as (parts, bays). parts is a list of (label, shape)."""
+    if offset is None:
+        offset = corner_offset()
     long_parts, long_bays = build_run(LONG_RUN, along_x=True, offset=offset, joint=joint)
     short_parts, short_bays = build_run(SHORT_RUN, along_x=False, offset=offset, joint=joint)
     parts = long_parts + short_parts
     if block:
         parts.append(corner_block(offset))
+    return parts, long_bays + short_bays
+
+
+def build_variant(name, joint, block, offset):
+    """Build, save and export one variant. Returns (parts, bays, cut list rows)."""
+    parts, bays = design_parts(joint, block, offset)
 
     doc = App.newDocument(name)
     for label, shape in parts:
@@ -257,7 +272,7 @@ def build_variant(name, joint, block, offset):
         w = csv.writer(f)
         w.writerow(["member", "section_mm", "length_mm", "qty", "note"])
         w.writerows(rows)
-    return parts, long_bays + short_bays, rows
+    return parts, bays, rows
 
 
 def main():
@@ -285,4 +300,8 @@ def main():
         sys.exit(1)
 
 
-main()
+# FreeCADCmd runs a script under its file name ("build"), not "__main__".
+# deck_with_balustrade/build.py imports this file under another name to reuse
+# its parts without building.
+if __name__ in ("__main__", "build"):
+    main()
