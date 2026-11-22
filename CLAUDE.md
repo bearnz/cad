@@ -4,11 +4,13 @@ FreeCAD designs for home projects, built from parametric Python scripts.
 
 ## Running
 
-Not written yet.
+`"C:\Program Files\FreeCAD 1.1\bin\FreeCADCmd.exe" <design>/build.py` from the
+repo root. Output goes to `out/`.
 
 ## Testing
 
-Not written yet.
+Each `build.py` prints its design checks and exits 1 if any fails. Run the
+build after every change.
 
 ## Notes
 
