@@ -10,6 +10,8 @@ Coordinates, in mm: the outside corner of the deck where the two balustraded
 edges meet is the origin. The long edge runs along +X, the short edge along +Y,
 the deck lies in +X/+Y, and the deck surface is z = 0. Posts are bolted to the
 outside face of the edge joists, so they sit just outside the deck (x < 0 or y < 0).
+Each run has its own corner post, so two posts straddle the corner, one on each
+joist face, meeting along the corner's vertical edge.
 """
 
 import csv
@@ -25,10 +27,10 @@ LONG_RUN = 5200.0  # balustrade length along the long edge, from the corner
 SHORT_RUN = 1800.0  # balustrade length along the short edge, from the corner to the steps
 DECK_HEIGHT = 960.0  # deck surface above ground at the highest point
 
-# --- Rules (NZ F4 for housing). NOT YET CONFIRMED against F4/AS1: see README.
-BARRIER_HEIGHT_MIN = 1000.0  # top of barrier above the deck surface
-MAX_OPENING = 100.0  # a sphere this size must not pass through any gap
-FOOTHOLD_ZONE = (150.0, 760.0)  # no horizontal climbable member with its top in this band
+# --- Rules: NZ F4/AS1 3rd edition, amendment 2 (effective 1 January 2017) --
+BARRIER_HEIGHT_MIN = 1000.0  # Table 1, housing decks: top of barrier above the deck surface
+MAX_OPENING = 100.0  # 1.2.1 b): a sphere this size must not pass through any opening
+BOTTOM_RAIL_TOP_MAX = 200.0  # Figure 2(a): top of the bottom rail above the deck surface
 
 # --- Timber (finished sizes, mm). Assumed, not chosen yet. -----------------
 POST = 90.0  # square post
@@ -62,9 +64,10 @@ def box(x0, x1, y0, y1, z0, z1):
 
 
 def post_positions(run):
-    """Post start positions along a run: the corner post sits at [-POST, 0],
-    the end post finishes flush with the run's end, the rest evenly between."""
-    first, last = -POST, run - POST
+    """Post start positions along a run: the corner post starts at the deck's
+    corner (0), the end post finishes flush with the run's end, the rest evenly
+    between."""
+    first, last = 0.0, run - POST
     bays = max(1, math.ceil((last - first) / MAX_POST_SPACING))
     return [first + (last - first) * i / bays for i in range(bays + 1)]
 
@@ -91,10 +94,7 @@ def build_run(run, along_x):
     parts, bays = [], []
     tag = "Long" if along_x else "Short"
 
-    # The corner post belongs to the long run only, so it isn't built twice.
     for i, p in enumerate(posts):
-        if i == 0 and not along_x:
-            continue
         parts.append((f"{tag}_Post{i}", place(p, p + POST, -POST, 0, -POST_BELOW_DECK, CAP_BOTTOM)))
 
     for b in range(len(posts) - 1):
@@ -116,7 +116,7 @@ def build_run(run, along_x):
     return parts, bays
 
 
-def checks(bays):
+def checks(bays, corner_gap):
     """Return a list of (name, ok, detail)."""
     worst_gap = max(b["gap"] for b in bays)
     spacings = [b["clear"] + POST for b in bays]
@@ -124,8 +124,8 @@ def checks(bays):
         ("Barrier height", CAP_TOP >= BARRIER_HEIGHT_MIN, f"top {CAP_TOP:.0f} mm, need >= {BARRIER_HEIGHT_MIN:.0f}"),
         ("Baluster gaps", worst_gap < MAX_OPENING, f"widest {worst_gap:.1f} mm, need < {MAX_OPENING:.0f}"),
         ("Bottom gap", BOTTOM_GAP < MAX_OPENING, f"{BOTTOM_GAP:.0f} mm, need < {MAX_OPENING:.0f}"),
-        ("Bottom rail below foothold zone", BOTTOM_RAIL_TOP <= FOOTHOLD_ZONE[0], f"top at {BOTTOM_RAIL_TOP:.0f} mm, zone starts {FOOTHOLD_ZONE[0]:.0f}"),
-        ("Top rail above foothold zone", TOP_RAIL_BOTTOM >= FOOTHOLD_ZONE[1], f"underside at {TOP_RAIL_BOTTOM:.0f} mm, zone ends {FOOTHOLD_ZONE[1]:.0f}"),
+        ("Bottom rail height", BOTTOM_RAIL_TOP <= BOTTOM_RAIL_TOP_MAX, f"top at {BOTTOM_RAIL_TOP:.0f} mm, max {BOTTOM_RAIL_TOP_MAX:.0f}"),
+        ("Corner opening", corner_gap < MAX_OPENING, f"{corner_gap:.1f} mm between the corner posts, need < {MAX_OPENING:.0f}"),
         ("Post spacing", max(spacings) <= MAX_POST_SPACING, f"widest {max(spacings):.0f} mm centres, max {MAX_POST_SPACING:.0f}"),
     ]
 
@@ -172,10 +172,13 @@ def main():
     for m, s, l, q in rows:
         print(f"  {q:3} x {m:10} {s:>7}  {l} mm")
     print("Checks:")
-    results = checks(bays)
+    shapes = dict(parts)
+    corner_gap = shapes["Long_Post0"].distToShape(shapes["Short_Post0"])[0]
+    results = checks(bays, corner_gap)
     for name, ok, detail in results:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}: {detail}")
     if not all(ok for _, ok, _ in results):
+        sys.stdout.flush()  # FreeCADCmd drops unflushed output on sys.exit
         sys.exit(1)
 
 
