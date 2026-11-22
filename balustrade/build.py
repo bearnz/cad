@@ -43,6 +43,10 @@ MAX_POST_SPACING = 1500.0  # centre to centre. Unchecked structurally (B1).
 POST_BELOW_DECK = 220.0  # post length below the deck surface, for the joist bolts
 BOTTOM_GAP = 50.0  # deck surface to underside of the bottom rail
 GAP_MARGIN = 5.0  # design baluster gaps this much under MAX_OPENING
+# Each corner post's distance back from the deck corner along its own joist.
+# The opening between the two corner posts is the diagonal, CORNER_OFFSET * sqrt(2).
+# None: choose it so that opening equals the widest baluster gap.
+CORNER_OFFSET = None
 
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out")
 
@@ -63,11 +67,11 @@ def box(x0, x1, y0, y1, z0, z1):
     return Part.makeBox(x1 - x0, y1 - y0, z1 - z0, App.Vector(x0, y0, z0))
 
 
-def post_positions(run):
-    """Post start positions along a run: the corner post starts at the deck's
-    corner (0), the end post finishes flush with the run's end, the rest evenly
-    between."""
-    first, last = 0.0, run - POST
+def post_positions(run, offset):
+    """Post start positions along a run: the corner post starts `offset` back
+    from the deck's corner, the end post finishes flush with the run's end, the
+    rest evenly between."""
+    first, last = offset, run - POST
     bays = max(1, math.ceil((last - first) / MAX_POST_SPACING))
     return [first + (last - first) * i / bays for i in range(bays + 1)]
 
@@ -80,7 +84,32 @@ def baluster_layout(clear):
     return n, gap
 
 
-def build_run(run, along_x):
+def widest_gap(offset):
+    """Widest baluster gap across both runs for a given corner offset."""
+    gaps = []
+    for run in (LONG_RUN, SHORT_RUN):
+        posts = post_positions(run, offset)
+        gaps += [baluster_layout(b - a - POST)[1] for a, b in zip(posts, posts[1:])]
+    return max(gaps)
+
+
+def corner_offset():
+    """CORNER_OFFSET, or by bisection the offset whose diagonal corner opening
+    equals the widest baluster gap. Moving the corner posts back shortens the
+    bays, so the gaps shrink as the corner opening grows."""
+    if CORNER_OFFSET is not None:
+        return CORNER_OFFSET
+    lo, hi = 0.0, MAX_OPENING / math.sqrt(2)
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        if mid * math.sqrt(2) < widest_gap(mid):
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+def build_run(run, along_x, offset):
     """Return (parts, bays) for one run. parts is a list of (label, shape)."""
     # Map (along, across, z) in run space to model space. "across" runs from
     # the joist face (0) outwards (negative), so posts sit at across in [-POST, 0].
@@ -90,7 +119,7 @@ def build_run(run, along_x):
         return box(c0, c1, a0, a1, z0, z1)
 
     mid = -POST / 2  # rail and baluster centreline, across the run
-    posts = post_positions(run)
+    posts = post_positions(run, offset)
     parts, bays = [], []
     tag = "Long" if along_x else "Short"
 
@@ -108,8 +137,8 @@ def build_run(run, along_x):
             parts.append((f"{tag}_Bay{b}_Baluster{k}", place(s, s + BALUSTER, mid - BALUSTER / 2, mid + BALUSTER / 2, BOTTOM_RAIL_TOP, TOP_RAIL_BOTTOM)))
         bays.append({"run": tag, "bay": b, "clear": clear, "balusters": n, "gap": gap})
 
-    # Cap rail centred on the post line. The long cap runs through the corner;
-    # the short cap butts against its side.
+    # Cap rail centred on the post line. The long cap runs through the corner,
+    # over the gap between the corner posts; the short cap butts against its side.
     c0 = mid - CAP_W / 2
     start = mid - CAP_W / 2 if along_x else mid + CAP_W / 2
     parts.append((f"{tag}_Cap", place(start, run, c0, c0 + CAP_W, CAP_BOTTOM, CAP_TOP)))
@@ -146,8 +175,9 @@ def cut_list(parts):
 
 
 def main():
-    long_parts, long_bays = build_run(LONG_RUN, along_x=True)
-    short_parts, short_bays = build_run(SHORT_RUN, along_x=False)
+    offset = corner_offset()
+    long_parts, long_bays = build_run(LONG_RUN, along_x=True, offset=offset)
+    short_parts, short_bays = build_run(SHORT_RUN, along_x=False, offset=offset)
     parts = long_parts + short_parts
     bays = long_bays + short_bays
 
@@ -165,6 +195,7 @@ def main():
         w.writerow(["member", "section_mm", "length_mm", "qty"])
         w.writerows(rows)
 
+    print(f"Corner posts: {offset:.1f} mm back from the deck corner, cap overhangs the long one by {offset + POST / 2 + CAP_W / 2:.0f} mm")
     print("Bays:")
     for b in bays:
         print(f"  {b['run']:5} bay {b['bay']}: clear {b['clear']:.0f} mm, {b['balusters']} balusters, gaps {b['gap']:.1f} mm")

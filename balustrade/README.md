@@ -10,9 +10,16 @@ meet at a right-angled outside corner:
 
 The deck surface is 0.96 m above the ground at its highest point. Posts bolt
 to the outside face of the edge joists. Two posts straddle the corner, one on
-each joist face, meeting along the corner's vertical edge. The infill is
-vertical balusters between a top and a bottom rail, with a flat cap rail on
+each joist face. Each is set back from the corner, so a gap is left between
+them, and the cap rails run on over the gap and meet at the corner. The infill
+is vertical balusters between a top and a bottom rail, with a flat cap rail on
 top.
+
+**The corner gap is a diagonal.** With each post set back by `CORNER_OFFSET`,
+the opening between their nearest edges is `CORNER_OFFSET * sqrt(2)`. By
+default the build picks the offset that makes this opening equal to the widest
+baluster gap. Setting the posts back also shortens the bays, which closes the
+baluster gaps a little.
 
 ## Build
 
@@ -57,8 +64,9 @@ design meets the F4/AS1 figures above.
 |---|---|
 | Barrier height | 1000 mm, top of cap above the deck surface |
 | Posts | 8 posts, 90x90, 1175 mm long (220 mm below the deck surface for the bolts) |
-| Long run | 5 posts, 4 bays at 1278 mm centres, 8 balusters per bay, 94.6 mm gaps |
-| Short run | 3 posts, 2 bays at 855 mm centres, 5 balusters per bay, 92.5 mm gaps |
+| Corner | Each corner post 65.6 mm back from the deck corner; 92.8 mm diagonal opening between them |
+| Long run | 5 posts, 4 bays at 1261 mm centres, 8 balusters per bay, 92.8 mm gaps |
+| Short run | 3 posts, 2 bays at 822 mm centres, 5 balusters per bay, 87.0 mm gaps |
 | Rails | 90x45 on edge. The bottom rail is 50 mm above the deck, with its top at 140 mm; the top rail sits under the cap. |
 | Balusters | 42x42, 725 mm long, 42 in total |
 | Cap | 140x45, one 5315 mm length and one 1775 mm length butted at the corner |
@@ -75,9 +83,14 @@ design meets the F4/AS1 figures above.
   - the bolts to the joists;
   - the joists themselves;
   - the rail spans.
-- **Gaps leave about 5 mm of margin.** The widest gap is 94.6 mm against the
-  100 mm limit. A twisted or shrunk baluster could eat that. Raise
-  `GAP_MARGIN` for more room, which adds a baluster per bay.
+- **Gaps leave about 7 mm of margin.** The widest gap, along the long run and
+  at the corner, is 92.8 mm against the 100 mm limit. A twisted or shrunk
+  baluster could eat into that. `GAP_MARGIN = 15` adds a baluster per bay (48
+  balusters instead of 42). That gives 79.5 mm gaps on the long run and at the
+  corner, and 69.3 mm on the short run, with each corner post 56.2 mm back.
+- **The corner cap is unsupported for 181 mm.** The long cap runs about
+  181 mm past the face of its corner post, and the short cap butts onto its
+  side. Consider a block under the joint, or a mitre instead of the butt.
 - **Timber treatment.** The
   [barriers guidance](https://www.building.govt.nz/building-code-compliance/f-safety-of-users/f4-safety-from-falling/barriers-and-handrails/)
   sets durability (B2/AS1 Table 1): at least 50 years for barrier posts and
