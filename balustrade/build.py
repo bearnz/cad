@@ -42,7 +42,7 @@ BALUSTER = 42.0  # square baluster
 MAX_POST_SPACING = 1500.0  # centre to centre. Unchecked structurally (B1).
 POST_BELOW_DECK = 220.0  # post length below the deck surface, for the joist bolts
 BOTTOM_GAP = 50.0  # deck surface to underside of the bottom rail
-GAP_MARGIN = 5.0  # design baluster gaps this much under MAX_OPENING
+GAP_MARGIN = 15.0  # design baluster gaps this much under MAX_OPENING, for timber movement
 # Each corner post's distance back from the deck corner along its own joist.
 # The opening between the two corner posts is the diagonal, CORNER_OFFSET * sqrt(2).
 # None: choose it so that opening equals the widest baluster gap.

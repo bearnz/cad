@@ -64,11 +64,12 @@ design meets the F4/AS1 figures above.
 |---|---|
 | Barrier height | 1000 mm, top of cap above the deck surface |
 | Posts | 8 posts, 90x90, 1175 mm long (220 mm below the deck surface for the bolts) |
-| Corner | Each corner post 65.6 mm back from the deck corner; 92.8 mm diagonal opening between them |
-| Long run | 5 posts, 4 bays at 1261 mm centres, 8 balusters per bay, 92.8 mm gaps |
-| Short run | 3 posts, 2 bays at 822 mm centres, 5 balusters per bay, 87.0 mm gaps |
+| Gap margin | Gaps designed at least 15 mm under the 100 mm limit (`GAP_MARGIN`), for timber movement |
+| Corner | Each corner post 56.2 mm back from the deck corner; 79.5 mm diagonal opening between them |
+| Long run | 5 posts, 4 bays at 1263 mm centres, 9 balusters per bay, 79.5 mm gaps |
+| Short run | 3 posts, 2 bays at 827 mm centres, 6 balusters per bay, 69.3 mm gaps |
 | Rails | 90x45 on edge. The bottom rail is 50 mm above the deck, with its top at 140 mm; the top rail sits under the cap. |
-| Balusters | 42x42, 725 mm long, 42 in total |
+| Balusters | 42x42, 725 mm long, 48 in total |
 | Cap | 140x45, one 5315 mm length and one 1775 mm length butted at the corner |
 
 ## Not decided or not checked yet
@@ -83,13 +84,8 @@ design meets the F4/AS1 figures above.
   - the bolts to the joists;
   - the joists themselves;
   - the rail spans.
-- **Gaps leave about 7 mm of margin.** The widest gap, along the long run and
-  at the corner, is 92.8 mm against the 100 mm limit. A twisted or shrunk
-  baluster could eat into that. `GAP_MARGIN = 15` adds a baluster per bay (48
-  balusters instead of 42). That gives 79.5 mm gaps on the long run and at the
-  corner, and 69.3 mm on the short run, with each corner post 56.2 mm back.
-- **The corner cap is unsupported for 181 mm.** The long cap runs about
-  181 mm past the face of its corner post, and the short cap butts onto its
+- **The corner cap is unsupported for 171 mm.** The long cap runs about
+  171 mm past the face of its corner post, and the short cap butts onto its
   side. Consider a block under the joint, or a mitre instead of the butt.
 - **Timber treatment.** The
   [barriers guidance](https://www.building.govt.nz/building-code-compliance/f-safety-of-users/f4-safety-from-falling/barriers-and-handrails/)
